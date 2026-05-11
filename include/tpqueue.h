@@ -1,64 +1,68 @@
 // Copyright 2022 NNTU-CS
 #ifndef INCLUDE_TPQUEUE_H_
 #define INCLUDE_TPQUEUE_H_
-struct SYM {
-  char ch;
-  int prior;
-};
+#include <stdexcept>
 
 template<typename T>
 class TPQueue {
  private:
-  struct Item {
-    T data;
-    Item *next;
-  };
-
-  Item *head = nullptr;
-
-  Item *create(const T &value) {
-    Item *item = new Item;
-    item->data = value;
-    item->next = nullptr;
-    return item;
-  }
+    struct Node {
+        T data;
+        Node* next;
+        explicit Node(const T &d, Node* n = nullptr) : data(d), next(n) { }
+    };
+    Node* head;
 
  public:
-  void push(const T &value) {
-    Item *item = create(value);
-
-    if (head == nullptr) {
-      head = item;
-      return;
+    TPQueue() : head(nullptr) { }
+    ~TPQueue() {
+        while (!empty()) {
+            pop();
+        }
     }
-    if (value.prior > head->data.prior) {
-      item->next = head;
-      head = item;
-      return;
+    bool empty() const {
+        return head == nullptr;
     }
-
-    Item *curItem = head;
-    while (curItem->next && curItem->next->data.prior >= value.prior) {
-      curItem = curItem->next;
+    void push(const T& value) {
+        Node* newNode = new Node(value);
+        if (!head || value.prior > head->data.prior) {
+            newNode->next = head;
+            head = newNode;
+        } else {
+            Node* current = head;
+            while (current->next && current->next->data.prior >= value.prior) {
+                current = current->next;
+            }
+            newNode->next = current->next;
+            current->next = newNode;
+        }
     }
-    item->next = curItem->next;
-    curItem->next = item;
-  }
-
-  T pop() {
-    Item *temp = head;
-    T value = temp->data;
-    head = head->next;
-    delete temp;
-
-    return value;
-  }
-  ~TPQueue() {
-    while (head) {
-      Item *temp = head;
-      head = head->next;
-      delete temp;
+    T pop() {
+        if (empty()) {
+            throw std::underflow_error("empty");
+        }
+        Node* temp = head;
+        T value = head->data;
+        head = head->next;
+        delete temp;
+        return value;
     }
-  }
+    T& front() {
+        if (empty()) {
+            throw std::underflow_error("empty");
+        }
+        return head->data;
+    }
+    const T& front() const {
+        if (empty()) {
+            throw std::underflow_error("empty");
+        }
+        return head->data;
+    }
+};
+
+struct SYM {
+  char ch;
+  int prior;
 };
 #endif  // INCLUDE_TPQUEUE_H_
